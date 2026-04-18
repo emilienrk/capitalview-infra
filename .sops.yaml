@@ -1,0 +1,3 @@
+creation_rules:
+  - path_regex: ^\.env(\.prod)?$
+    age: age1wq79x5qtz8k9rxrkgzg7tfe3c93a8l2lnya78mxqmqelt4nxp3psm7sduy

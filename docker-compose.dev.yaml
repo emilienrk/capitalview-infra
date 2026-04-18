@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: capitalview-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: capitalview
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: ../capitalview-api
+    container_name: capitalview-backend
+    env_file:
+    - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    volumes:
+      - ../capitalview-api:/app
+
+  frontend:
+    build:
+      context: ../capitalview-web
+    container_name: capitalview-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ../capitalview-web:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
