@@ -11,8 +11,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-capitalview}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - web_net
+      # - ./dump_capitalview.fr.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -29,9 +30,7 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "8000:8000"
-    networks:
-      - web_net
+      - "8010:8000"
 
   frontend:
     image: ghcr.io/emilienrk/capitalview-web:latest
@@ -41,17 +40,13 @@ services:
         VITE_API_URL: ${VITE_API_URL}
     restart: unless-stopped
     ports:
-      - "5173:80"
+      - "8011:80"
     depends_on:
       - backend
-    networks:
-      - web_net
+
+networks:
+  default:
+    name: capitalview_network
 
 volumes:
   postgres_data:
-    external: true
-    name: capitalviewemilienroukinecom_postgres_data
-
-networks:
-  web_net:
-    external: true
