@@ -1,0 +1,12 @@
+[Unit]
+Description=Check and deploy CapitalView every 5 minutes
+
+[Timer]
+# First run 1 min after boot, then every 5 min.
+OnBootSec=1min
+OnUnitActiveSec=5min
+# Catch up a missed tick if the machine was off.
+Persistent=true
+
+[Install]
+WantedBy=timers.target
