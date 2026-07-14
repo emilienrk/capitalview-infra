@@ -45,7 +45,13 @@ log "Pulling images (downloads only if the digest changed)..."
 docker compose -f "$COMPOSE_FILE" pull --quiet
 
 log "Applying compose (recreates only changed services)..."
-docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
+if ! docker compose -f "$COMPOSE_FILE" up -d --remove-orphans 2>&1; then
+  log "WARNING: 'compose up' failed (stale network or config change?). Tearing down and retrying..."
+  docker compose -f "$COMPOSE_FILE" down --remove-orphans || true
+  docker network prune -f || true
+  log "Retrying compose up after clean teardown..."
+  docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
+fi
 
 log "Pruning dangling images..."
 docker image prune -f
