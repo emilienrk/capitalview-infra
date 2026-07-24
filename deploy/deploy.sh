@@ -33,16 +33,28 @@ else
   log "Config already up to date."
 fi
 
-log "Decrypting secrets (SOPS via Docker, no native install needed)..."
-docker run --rm \
-  -e SOPS_AGE_KEY="$(cat "$SOPS_AGE_KEY_FILE")" \
-  -v "$REPO_DIR:/work" -w /work \
-  "$SOPS_IMAGE" \
-  --decrypt --input-type dotenv --output-type dotenv "$ENC_FILE" > "$ENV_FILE"
-chmod 600 "$ENV_FILE"
+log "Decrypting secrets (SOPS)..."
+if [ -f "$ENC_FILE" ]; then
+  if [ -f "$ENV_FILE" ] && [ "$ENV_FILE" -nt "$ENC_FILE" ]; then
+    log "Secrets up to date ($ENV_FILE is newer than $ENC_FILE). Skipping SOPS."
+  else
+    log "Decrypting $ENC_FILE..."
+    docker run --rm \
+      -e SOPS_AGE_KEY="$(cat "$SOPS_AGE_KEY_FILE")" \
+      -v "$REPO_DIR:/work" -w /work \
+      "$SOPS_IMAGE" \
+      --decrypt --input-type dotenv --output-type dotenv "$ENC_FILE" > "$ENV_FILE"
+    chmod 600 "$ENV_FILE"
+    log "  -> $ENV_FILE"
+  fi
+fi
 
-log "Pulling images (downloads only if the digest changed)..."
-docker compose -f "$COMPOSE_FILE" pull --quiet
+log "Pulling images..."
+if ! docker compose -f "$COMPOSE_FILE" pull; then
+  log "WARNING: 'compose pull' failed. Cleaning up stale images and retrying..."
+  docker image prune -f || true
+  docker compose -f "$COMPOSE_FILE" pull
+fi
 
 log "Applying compose (recreates only changed services)..."
 if ! docker compose -f "$COMPOSE_FILE" up -d --remove-orphans 2>&1; then
