@@ -52,6 +52,28 @@ them up on the next tick.
    sudo systemctl start capitalview-deploy.service
    ```
 
+## Environment variables
+
+`.env.prod.enc` is the only source of runtime configuration. To add or change a
+variable, decrypt, edit, re-encrypt:
+
+```bash
+sops .env.prod.enc     # opens decrypted, re-encrypts on save
+```
+
+### MCP endpoint
+
+The API serves its MCP endpoint from the existing backend container — no new
+service, port or proxy rule. It does need two variables:
+
+| Variable | Set it to | Why |
+| --- | --- | --- |
+| `MCP_PUBLIC_URL` | `https://api.<domaine>/mcp` | Shown in the settings UI and handed to MCP clients. **Without it the app falls back to `http://localhost:8000/mcp`, and the connection snippet users copy is wrong.** |
+| `MCP_ALLOWED_HOSTS` | `api.<domaine>` | Optional. Re-enables the SDK's DNS-rebinding protection with a Host allow-list. Leave unset behind the reverse proxy, which would otherwise trip it and answer 421. |
+
+`MCP_ENABLED` defaults to `true`; set it to `false` to take the endpoint down
+without redeploying the image.
+
 ## Observability
 
 ```bash
